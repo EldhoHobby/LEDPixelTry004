@@ -1,5 +1,6 @@
 #include <WiFiS3.h>
 #include <ArduinoOTA.h>
+#include <NuSock.h>
 #include "arduino_secrets.h"
 #include <FastLED.h>
 
@@ -195,6 +196,40 @@ void loop() {
     ArduinoOTA.handle();
     handleWebServer();
     handleSerialInput();
+
+    // WebSocket Data Push
+    if (wsServer.clientCount() > 0) {
+        const int num_leds_sampled = NUM_LEDS / WEB_PREVIEW_SAMPLING_RATE;
+        uint8_t strip_buffer[num_leds_sampled * 3 + 1];
+        strip_buffer[0] = 0; // Target: Strip
+        for (int i = 0; i < num_leds_sampled; i++) {
+            strip_buffer[i * 3 + 1] = leds[i * WEB_PREVIEW_SAMPLING_RATE].r;
+            strip_buffer[i * 3 + 2] = leds[i * WEB_PREVIEW_SAMPLING_RATE].g;
+            strip_buffer[i * 3 + 3] = leds[i * WEB_PREVIEW_SAMPLING_RATE].b;
+        }
+        wsServer.send(strip_buffer, sizeof(strip_buffer));
+
+        const int sampled_width = MATRIX_WIDTH / WEB_PREVIEW_SAMPLING_RATE;
+        const int sampled_height = MATRIX_HEIGHT / WEB_PREVIEW_SAMPLING_RATE;
+        const int num_matrix_sampled = sampled_width * sampled_height;
+        uint8_t matrix_buffer[num_matrix_sampled * 3 + 1];
+        matrix_buffer[0] = 1; // Target: Matrix
+        for (int y = 0; y < sampled_height; y++) {
+            for (int x = 0; x < sampled_width; x++) {
+                int original_x = x * WEB_PREVIEW_SAMPLING_RATE;
+                int original_y = y * WEB_PREVIEW_SAMPLING_RATE;
+                int index = XY(original_x, original_y);
+                if (index != -1) {
+                    int buffer_index = (y * sampled_width + x) * 3 + 1;
+                    matrix_buffer[buffer_index] = matrix_leds[index].r;
+                    matrix_buffer[buffer_index + 1] = matrix_leds[index].g;
+                    matrix_buffer[buffer_index + 2] = matrix_leds[index].b;
+                }
+            }
+        }
+        wsServer.send(matrix_buffer, sizeof(matrix_buffer));
+    }
+
 #ifdef ENABLE_ONBOARD_DISPLAY
     updateScrollingText();
 #endif
