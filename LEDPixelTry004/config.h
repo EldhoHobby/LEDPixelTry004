@@ -9,6 +9,7 @@
 // The Fire Pattern is disabled by default as it uses a lot of RAM.
 // #define ENABLE_ONBOARD_DISPLAY
 // #define ENABLE_FIRE_PATTERN
+#define WEB_PREVIEW_SAMPLING_RATE 4
 
 // --- Strip Configuration (Pins 6 & 7) ---
 #define DATA_PIN 6
