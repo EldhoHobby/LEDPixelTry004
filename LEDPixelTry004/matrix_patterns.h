@@ -6,6 +6,8 @@
 void setupMatrixPatterns();
 void loopMatrixPatterns();
 
+int XY(int x, int y);
+
 const char* getMatrixPatternName();
 int getMatrixRemainingTime();
 void nextMatrixPatternManual();
